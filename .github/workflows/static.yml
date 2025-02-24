@@ -3,10 +3,10 @@ name: Test ASP.NET API
 on:
   push:
     branches:
-      - main  # Runs tests when pushing to main branch
+      - main  # Runs on push to main branch
   pull_request:
     branches:
-      - main  # Runs tests when creating a PR
+      - main  # Runs on PR to main branch
 
 jobs:
   build-and-test:
@@ -19,7 +19,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '6.0'  # Change this to match your .NET version
+          dotnet-version: '6.0'  # Change this to your .NET version
 
       - name: Restore dependencies
         run: dotnet restore
@@ -27,12 +27,14 @@ jobs:
       - name: Build API
         run: dotnet build --configuration Release --no-restore
 
-      - name: Run Tests
-        run: dotnet test --configuration Release --no-restore --logger "trx;LogFileName=test_results.trx"
+      - name: Run API Server (Background)
+        run: |
+          dotnet run --configuration Release --project YourApiProject.csproj &
+          sleep 10  # Wait 10 seconds for the server to start
 
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: Test Results
-          path: '**/test_results.trx'
+      - name: Test API with Curl
+        run: |
+          curl --fail http://localhost:5000/api/categories
+
+      - name: Run Automated Tests
+        run: dotnet test --configuration Release --no-restore
